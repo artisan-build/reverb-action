@@ -1,5 +1,5 @@
 name: 'Laravel Reverb'
-description: 'Run Laravel Reverb WebSocket server as a service container for testing'
+description: 'Run Laravel Reverb WebSocket server for testing'
 author: 'Artisan Build'
 
 branding:
@@ -23,23 +23,70 @@ inputs:
     description: 'Port to run Reverb on'
     required: false
     default: '8080'
+  timeout:
+    description: 'Seconds to wait for Reverb to be ready'
+    required: false
+    default: '30'
+
+outputs:
+  host:
+    description: 'Host where Reverb is running'
+    value: ${{ steps.start.outputs.host }}
+  port:
+    description: 'Port where Reverb is running'
+    value: ${{ steps.start.outputs.port }}
+  container-id:
+    description: 'Docker container ID'
+    value: ${{ steps.start.outputs.container_id }}
 
 runs:
   using: 'composite'
   steps:
-    - name: Usage instructions
+    - name: Start Reverb
+      id: start
       shell: bash
       run: |
-        echo "::notice::Laravel Reverb is designed to be used as a service container."
-        echo ""
-        echo "Add this to your workflow:"
-        echo ""
-        echo "services:"
-        echo "  reverb:"
-        echo "    image: ghcr.io/artisan-build/reverb:latest"
-        echo "    ports:"
-        echo "      - 8080:8080"
-        echo "    env:"
-        echo "      REVERB_APP_ID: app-id"
-        echo "      REVERB_APP_KEY: app-key"
-        echo "      REVERB_APP_SECRET: app-secret"
+        # Pull the image
+        docker pull ghcr.io/artisan-build/reverb-action:latest
+
+        # Start the container
+        CONTAINER_ID=$(docker run -d \
+          --name reverb-${{ github.run_id }} \
+          -p ${{ inputs.port }}:8080 \
+          -e REVERB_APP_ID=${{ inputs.app-id }} \
+          -e REVERB_APP_KEY=${{ inputs.app-key }} \
+          -e REVERB_APP_SECRET=${{ inputs.app-secret }} \
+          ghcr.io/artisan-build/reverb-action:latest)
+
+        echo "container_id=$CONTAINER_ID" >> $GITHUB_OUTPUT
+        echo "host=127.0.0.1" >> $GITHUB_OUTPUT
+        echo "port=${{ inputs.port }}" >> $GITHUB_OUTPUT
+
+        # Wait for Reverb to be ready
+        echo "Waiting for Reverb to be ready..."
+        for i in $(seq 1 ${{ inputs.timeout }}); do
+          if nc -z 127.0.0.1 ${{ inputs.port }} 2>/dev/null; then
+            echo "Reverb is ready on port ${{ inputs.port }}"
+            exit 0
+          fi
+          echo "Waiting... ($i/${{ inputs.timeout }})"
+          sleep 1
+        done
+
+        echo "::error::Reverb failed to start within ${{ inputs.timeout }} seconds"
+        docker logs reverb-${{ github.run_id }}
+        exit 1
+
+    - name: Register cleanup
+      shell: bash
+      run: |
+        # Create cleanup script
+        mkdir -p ${{ runner.temp }}
+        cat > ${{ runner.temp }}/reverb-cleanup.sh << 'EOF'
+        docker stop reverb-${{ github.run_id }} 2>/dev/null || true
+        docker rm reverb-${{ github.run_id }} 2>/dev/null || true
+        EOF
+        chmod +x ${{ runner.temp }}/reverb-cleanup.sh
+
+        # Register post-job cleanup (best effort)
+        echo "${{ runner.temp }}/reverb-cleanup.sh" >> $GITHUB_STATE

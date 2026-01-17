@@ -1,66 +1,60 @@
 # Laravel Reverb Action
 
-A Docker image providing Laravel Reverb as a service container for GitHub Actions CI/CD workflows.
+Run Laravel Reverb WebSocket server in GitHub Actions for testing.
 
 ## Usage
-
-Use the Docker image as a service container in your GitHub Actions workflow:
 
 ```yaml
 jobs:
   test:
     runs-on: ubuntu-latest
-
-    services:
-      reverb:
-        image: ghcr.io/artisan-build/reverb-action:latest
-        ports:
-          - 8080:8080
-        env:
-          REVERB_APP_ID: my-app-id
-          REVERB_APP_KEY: my-app-key
-          REVERB_APP_SECRET: my-app-secret
-
     steps:
       - uses: actions/checkout@v5
 
-      - name: Wait for Reverb
-        run: |
-          for i in {1..30}; do
-            if nc -z localhost 8080; then
-              echo "Reverb is ready"
-              exit 0
-            fi
-            echo "Waiting for Reverb... ($i/30)"
-            sleep 1
-          done
-          echo "Reverb failed to start"
-          exit 1
+      - uses: artisan-build/reverb-action@v1
+        id: reverb
+        with:
+          app-id: my-app-id
+          app-key: my-app-key
+          app-secret: my-app-secret
 
       - name: Run tests
         env:
-          REVERB_HOST: 127.0.0.1
-          REVERB_PORT: 8080
+          REVERB_HOST: ${{ steps.reverb.outputs.host }}
+          REVERB_PORT: ${{ steps.reverb.outputs.port }}
         run: vendor/bin/pest
 ```
 
-## Environment Variables
+The action:
+- Pulls and starts the Reverb container
+- Waits for it to be ready (with configurable timeout)
+- Outputs connection details
+- Cleans up after the job
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `REVERB_APP_ID` | `app-id` | Application ID |
-| `REVERB_APP_KEY` | `app-key` | Application key |
-| `REVERB_APP_SECRET` | `app-secret` | Application secret |
-| `REVERB_HOST` | `0.0.0.0` | Host to bind to |
-| `REVERB_PORT` | `8080` | Port to listen on |
-| `REVERB_SCHEME` | `http` | URL scheme (http/https) |
+## Inputs
+
+| Input | Default | Description |
+|-------|---------|-------------|
+| `app-id` | `app-id` | Reverb application ID |
+| `app-key` | `app-key` | Reverb application key |
+| `app-secret` | `app-secret` | Reverb application secret |
+| `port` | `8080` | Port to expose Reverb on |
+| `timeout` | `30` | Seconds to wait for Reverb to be ready |
+
+## Outputs
+
+| Output | Description |
+|--------|-------------|
+| `host` | Host where Reverb is running (`127.0.0.1`) |
+| `port` | Port where Reverb is running |
+| `container-id` | Docker container ID |
 
 ## Why Reverb instead of Soketi?
 
-- **Official Laravel package** - First-party support and maintained by the Laravel team
-- **Modern PHP** - Built on PHP 8.5, uses native fibers for async
-- **Same protocol** - Pusher-compatible, works with existing clients
-- **No Node.js dependency** - Pure PHP, no Node version compatibility issues
+- **Official Laravel package** - First-party support from the Laravel team
+- **Modern PHP** - Built on PHP 8.5 with native fibers
+- **Pusher-compatible** - Works with existing clients
+- **No Node.js dependency** - Pure PHP
 
 ## Local Development
 
