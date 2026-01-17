@@ -37,7 +37,9 @@ RUN chmod +x /entrypoint.sh
 ENV REVERB_APP_ID=app-id \
     REVERB_APP_KEY=app-key \
     REVERB_APP_SECRET=app-secret \
-    REVERB_HOST=0.0.0.0 \
+    REVERB_SERVER_HOST=0.0.0.0 \
+    REVERB_SERVER_PORT=8080 \
+    REVERB_HOST=127.0.0.1 \
     REVERB_PORT=8080 \
     REVERB_SCHEME=http
 
