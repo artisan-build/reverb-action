@@ -1,4 +1,4 @@
-FROM php:8.5-cli-alpine
+FROM php:8.4-cli-alpine
 
 LABEL org.opencontainers.image.source="https://github.com/artisan-build/reverb-action"
 LABEL org.opencontainers.image.description="Laravel Reverb WebSocket server for CI/CD"
@@ -22,10 +22,11 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 WORKDIR /app
 
 # Create minimal Laravel app with Reverb
-RUN composer create-project laravel/laravel . --prefer-dist --no-interaction --no-dev \
-    && composer require laravel/reverb --no-interaction
+RUN composer create-project laravel/laravel . --prefer-dist --no-interaction \
+    && composer require laravel/reverb --no-interaction \
+    && php artisan reverb:install --no-interaction
 
-# Copy custom configuration
+# Copy custom configuration (overwrite the published one)
 COPY config/reverb.php /app/config/reverb.php
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
