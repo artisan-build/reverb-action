@@ -27,7 +27,9 @@ RUN composer create-project laravel/laravel . --prefer-dist --no-interaction \
     && php artisan key:generate
 
 # Copy configuration files
+COPY config/broadcasting.php /app/config/broadcasting.php
 COPY config/reverb.php /app/config/reverb.php
+COPY routes/channels.php /app/routes/channels.php
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
