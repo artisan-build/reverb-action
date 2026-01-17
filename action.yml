@@ -1,0 +1,45 @@
+name: 'Laravel Reverb'
+description: 'Run Laravel Reverb WebSocket server as a service container for testing'
+author: 'Artisan Build'
+
+branding:
+  icon: 'radio'
+  color: 'orange'
+
+inputs:
+  app-id:
+    description: 'Reverb application ID'
+    required: false
+    default: 'app-id'
+  app-key:
+    description: 'Reverb application key'
+    required: false
+    default: 'app-key'
+  app-secret:
+    description: 'Reverb application secret'
+    required: false
+    default: 'app-secret'
+  port:
+    description: 'Port to run Reverb on'
+    required: false
+    default: '8080'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Usage instructions
+      shell: bash
+      run: |
+        echo "::notice::Laravel Reverb is designed to be used as a service container."
+        echo ""
+        echo "Add this to your workflow:"
+        echo ""
+        echo "services:"
+        echo "  reverb:"
+        echo "    image: ghcr.io/artisan-build/reverb:latest"
+        echo "    ports:"
+        echo "      - 8080:8080"
+        echo "    env:"
+        echo "      REVERB_APP_ID: app-id"
+        echo "      REVERB_APP_KEY: app-key"
+        echo "      REVERB_APP_SECRET: app-secret"
