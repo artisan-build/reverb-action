@@ -77,16 +77,3 @@ runs:
         docker logs reverb-${{ github.run_id }}
         exit 1
 
-    - name: Register cleanup
-      shell: bash
-      run: |
-        # Create cleanup script
-        mkdir -p ${{ runner.temp }}
-        cat > ${{ runner.temp }}/reverb-cleanup.sh << 'EOF'
-        docker stop reverb-${{ github.run_id }} 2>/dev/null || true
-        docker rm reverb-${{ github.run_id }} 2>/dev/null || true
-        EOF
-        chmod +x ${{ runner.temp }}/reverb-cleanup.sh
-
-        # Register post-job cleanup (best effort)
-        echo "${{ runner.temp }}/reverb-cleanup.sh" >> $GITHUB_STATE
