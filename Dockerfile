@@ -1,4 +1,4 @@
-FROM php:8.5-rc-cli-alpine
+FROM php:8.5-cli-alpine
 
 LABEL org.opencontainers.image.source="https://github.com/artisan-build/reverb-action"
 LABEL org.opencontainers.image.description="Laravel Reverb WebSocket server for CI/CD"
