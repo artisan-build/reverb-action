@@ -21,11 +21,12 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Set working directory
 WORKDIR /app
 
-# Create minimal Laravel app with Reverb
+# Create Laravel app with Reverb
 RUN composer create-project laravel/laravel . --prefer-dist --no-interaction \
-    && composer require laravel/reverb --no-interaction
+    && composer require laravel/reverb --no-interaction \
+    && php artisan key:generate
 
-# Copy Reverb configuration
+# Copy configuration files
 COPY config/reverb.php /app/config/reverb.php
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
